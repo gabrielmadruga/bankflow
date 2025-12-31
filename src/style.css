@@ -1,0 +1,111 @@
+:root {
+  --primary: #2563eb;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 2rem;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+#drop-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  background: var(--card);
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+#drop-zone.hover {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+
+/* New File List Style */
+#file-list {
+  margin-bottom: 2rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--card);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.stat-card p {
+  margin-top: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.table-container {
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px;
+  font-size: 0.85rem;
+}
+
+th {
+  background: #f1f5f9;
+  text-align: left;
+}
+
+td {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.income {
+  color: #059669;
+}
+
+.outcome {
+  color: #dc2626;
+}
+
+.btn-clear {
+  float: right;
+  background: #94a3b8;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}

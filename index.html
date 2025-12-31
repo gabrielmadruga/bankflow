@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      id="favicon"
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23EC7000'/%3E%3Ctext x='50%25' y='52%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-weight='900' font-size='14' fill='white'%3EBF%3C/text%3E%3Cpath d='M4 20c4-2 8-2 16 0' stroke='white' stroke-width='1.5' fill='none' opacity='0.6'/%3E%3C/svg%3E"
+    />
+    <title>BankFlow Pro</title>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  </head>
+
+  <body>
+    <div class="container">
+      <button class="btn-clear" onclick="clearData()">Reset Dashboard</button>
+      <h1>BankFlow Pro</h1>
+
+      <div id="drop-zone">
+        Drag and drop Itaú bank Excel files here, or click to upload.
+        <input type="file" id="file-input" hidden accept=".xls,.xlsx" multiple />
+      </div>
+
+      <div id="file-list">No files loaded</div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Income</h3>
+          <p id="total-income">$0.00</p>
+        </div>
+        <div class="stat-card">
+          <h3>Total Outcome</h3>
+          <p id="total-outcome">$0.00</p>
+        </div>
+        <div class="stat-card">
+          <h3>Net Balance</h3>
+          <p id="net-balance">$0.00</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Reference</th>
+              <th>Debit</th>
+              <th>Credit</th>
+            </tr>
+          </thead>
+          <tbody id="tx-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
