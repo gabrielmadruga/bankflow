@@ -30,6 +30,7 @@ interface AppState {
   income: number;
   outcome: number;
   loadedFiles: string[];
+  transactions: Transaction[];
   reset(): void;
   readonly netBalance: number;
 }
@@ -74,11 +75,13 @@ const state: AppState = {
   income: 0,
   outcome: 0,
   loadedFiles: [],
+  transactions: [],
 
   reset() {
     this.income = 0;
     this.outcome = 0;
     this.loadedFiles = [];
+    this.transactions = [];
   },
 
   get netBalance() {
@@ -157,7 +160,7 @@ function processFile(file: File): void {
         blankrows: false,
       });
 
-      appendTransactions(rows);
+      addTransactions(rows);
     } catch (error) {
       console.error(`Failed to parse Excel file: ${file.name}`, error);
     }
@@ -167,19 +170,48 @@ function processFile(file: File): void {
 }
 
 // ============================================================================
+// Date Utilities
+// ============================================================================
+
+function parseExcelDate(value: string | number | null): string {
+  if (typeof value === "number") {
+    const { y, m, d } = XLSX.SSF.parse_date_code(value);
+    return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+  }
+  return value ?? "";
+}
+
+function parseDateString(dateStr: string): Date | null {
+  const parts = dateStr.split("/");
+  if (parts.length !== 3) return null;
+
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+  const year = parseInt(parts[2], 10);
+
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+
+  return new Date(year, month, day);
+}
+
+function compareTransactionsByDate(a: Transaction, b: Transaction): number {
+  const dateA = parseDateString(a.date);
+  const dateB = parseDateString(b.date);
+
+  // Handle invalid dates
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return 1; // Push invalid dates to end
+  if (!dateB) return -1;
+
+  return dateB.getTime() - dateA.getTime();
+}
+
+// ============================================================================
 // Data Parsing
 // ============================================================================
 
 function findHeaderRowIndex(rows: ExcelRow[]): number {
   return rows.findIndex((row) => row?.some((cell) => typeof cell === "string" && cell.toUpperCase().includes("FECHA")));
-}
-
-function parseExcelDate(value: string | number | null): string {
-  if (typeof value === "number") {
-    const { y, m, d } = XLSX.SSF.parse_date_code(value);
-    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  }
-  return value ?? "";
 }
 
 function parseMoney(value: string | number | null): number {
@@ -210,24 +242,44 @@ function parseTransaction(row: (string | number | null)[]): Transaction {
 }
 
 // ============================================================================
-// DOM Updates
+// Transaction Management
 // ============================================================================
 
-function appendTransactions(rows: ExcelRow[]): void {
+function addTransactions(rows: ExcelRow[]): void {
   const headerIndex = findHeaderRowIndex(rows);
   const dataRows = rows.slice(headerIndex + 1);
 
-  const fragment = document.createDocumentFragment();
+  const newTransactions = dataRows.filter(isValidDataRow).map(parseTransaction);
 
-  dataRows.filter(isValidDataRow).forEach((row) => {
-    const tx = parseTransaction(row);
+  state.transactions.push(...newTransactions);
+  state.transactions.sort(compareTransactionsByDate);
 
+  recalculateTotals();
+  renderTransactions();
+}
+
+function recalculateTotals(): void {
+  state.income = 0;
+  state.outcome = 0;
+
+  state.transactions.forEach((tx) => {
     state.income += tx.credit;
     state.outcome += tx.debit;
+  });
+}
 
+// ============================================================================
+// DOM Updates
+// ============================================================================
+
+function renderTransactions(): void {
+  const fragment = document.createDocumentFragment();
+
+  state.transactions.forEach((tx) => {
     fragment.appendChild(createTransactionRow(tx));
   });
 
+  elements.txBody.innerHTML = "";
   elements.txBody.appendChild(fragment);
   updateDashboard();
 }
@@ -275,7 +327,6 @@ function clearData(): void {
   updateDashboard();
 }
 
-// Make clearData available globally for HTML onclick
 declare global {
   interface Window {
     clearData: typeof clearData;
