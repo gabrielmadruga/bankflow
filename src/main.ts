@@ -19,6 +19,7 @@ const MIN_ROW_LENGTH = 5;
 // ============================================================================
 
 interface Transaction {
+  key: string;
   date: string;
   description: string;
   reference: string;
@@ -29,8 +30,8 @@ interface Transaction {
 interface AppState {
   income: number;
   outcome: number;
-  loadedFiles: string[];
-  transactions: Transaction[];
+  loadedFiles: Set<string>;
+  transactions: Map<string, Transaction>;
   reset(): void;
   readonly netBalance: number;
 }
@@ -74,14 +75,14 @@ const elements = {
 const state: AppState = {
   income: 0,
   outcome: 0,
-  loadedFiles: [],
-  transactions: [],
+  loadedFiles: new Set(),
+  transactions: new Map(),
 
   reset() {
     this.income = 0;
     this.outcome = 0;
-    this.loadedFiles = [];
-    this.transactions = [];
+    this.loadedFiles = new Set();
+    this.transactions = new Map();
   },
 
   get netBalance() {
@@ -130,7 +131,7 @@ function handleFiles(files: FileList): void {
   if (!files.length) return;
 
   Array.from(files).forEach((file) => {
-    state.loadedFiles.push(file.name);
+    state.loadedFiles.add(file.name);
     processFile(file);
   });
 
@@ -232,12 +233,19 @@ function isValidDataRow(row: ExcelRow): row is (string | number | null)[] {
 }
 
 function parseTransaction(row: (string | number | null)[]): Transaction {
+  const date = parseExcelDate(row[COLUMN_INDICES.DATE]);
+  const description = String(row[COLUMN_INDICES.DESCRIPTION] ?? "").trim();
+  const reference = String(row[COLUMN_INDICES.REFERENCE] ?? "").trim();
+  const debit = parseMoney(row[COLUMN_INDICES.DEBIT]);
+  const credit = parseMoney(row[COLUMN_INDICES.CREDIT]);
+
   return {
-    date: parseExcelDate(row[COLUMN_INDICES.DATE]),
-    description: String(row[COLUMN_INDICES.DESCRIPTION] ?? "").trim(),
-    reference: String(row[COLUMN_INDICES.REFERENCE] ?? "").trim(),
-    debit: parseMoney(row[COLUMN_INDICES.DEBIT]),
-    credit: parseMoney(row[COLUMN_INDICES.CREDIT]),
+    key: `${date}|${description}|${reference}|${debit}|${credit}`,
+    date,
+    description,
+    reference,
+    debit,
+    credit,
   };
 }
 
@@ -249,13 +257,19 @@ function addTransactions(rows: ExcelRow[]): void {
   const headerIndex = findHeaderRowIndex(rows);
   const dataRows = rows.slice(headerIndex + 1);
 
-  const newTransactions = dataRows.filter(isValidDataRow).map(parseTransaction);
-
-  state.transactions.push(...newTransactions);
-  state.transactions.sort(compareTransactionsByDate);
+  dataRows
+    .filter(isValidDataRow)
+    .map(parseTransaction)
+    .forEach((tx) => {
+      state.transactions.set(tx.key, tx);
+    });
 
   recalculateTotals();
   renderTransactions();
+}
+
+function getSortedTransactions(): Transaction[] {
+  return Array.from(state.transactions.values()).sort(compareTransactionsByDate);
 }
 
 function recalculateTotals(): void {
@@ -275,7 +289,7 @@ function recalculateTotals(): void {
 function renderTransactions(): void {
   const fragment = document.createDocumentFragment();
 
-  state.transactions.forEach((tx) => {
+  getSortedTransactions().forEach((tx) => {
     fragment.appendChild(createTransactionRow(tx));
   });
 
@@ -307,7 +321,8 @@ function createTransactionRow(tx: Transaction): HTMLTableRowElement {
 }
 
 function updateFileListDisplay(): void {
-  elements.fileList.textContent = state.loadedFiles.length ? `Loaded files: ${state.loadedFiles.join(", ")}` : "No files loaded";
+  const files = Array.from(state.loadedFiles);
+  elements.fileList.textContent = files.length ? `Loaded files: ${files.join(", ")}` : "No files loaded";
 }
 
 function updateDashboard(): void {
